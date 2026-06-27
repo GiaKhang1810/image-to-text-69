@@ -4,7 +4,9 @@ cat > /mnt/user-data/outputs/index.html << 'HTMLEOF'
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="https://nhandangvanbanocr69.com">
     <title>BillScan - Quét hóa đơn AI</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans:wght@400;700;900&display=swap');
 
@@ -41,7 +43,7 @@ cat > /mnt/user-data/outputs/index.html << 'HTMLEOF'
         .screen.active { display: block; }
 
         .page-eyebrow { font-size: .7rem; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; color: var(--gray); margin-bottom: 4px; }
-        .page-heading { font-family: 'Bebas Neue', sans-serif; font-size: 3.2rem; line-height: .95; color: var(--black); letter-spacing: .04em; margin-bottom: 28px; }
+        .page-heading { font-family: 'Arial', sans-serif; font-size: 3.52rem; line-height: .95; color: var(--black); letter-spacing: .12em; margin-bottom: 28px; font-weight: 900; text-transform: uppercase; }
         .page-heading span { color: var(--blue); }
         .accent-stripe { height: 6px; background: repeating-linear-gradient(-45deg, var(--blue) 0px, var(--blue) 6px, var(--white) 6px, var(--white) 12px); margin-bottom: 20px; }
 
@@ -129,7 +131,7 @@ cat > /mnt/user-data/outputs/index.html << 'HTMLEOF'
             .page { grid-template-columns: 1fr; }
             .sidebar { display: none; }
             .main { padding: 20px 16px; }
-            .page-heading { font-size: 2.2rem; }
+            .page-heading { font-size: 2.42rem; }
         }
     </style>
 </head>
@@ -157,11 +159,11 @@ cat > /mnt/user-data/outputs/index.html << 'HTMLEOF'
     <main class="main">
 
         <div class="screen active" id="screen-scan">
-            <div class="page-eyebrow">OCR · Nhận dạng văn bản</div>
-            <div class="page-heading">QUÉT BILL<br><span>THANH TOÁN.</span></div>
+            <div class="page-eyebrow">OCR</div>
+            <div class="page-heading">nhận dạng văn bản<br><span>từ hình ảnh</span></div>
             <div class="accent-stripe"></div>
 
-            <div class="card">
+            <div class="card" style="display: none;">
                 <div class="card-header"><span class="card-num">01</span><span class="card-label">Cấu hình API</span></div>
                 <div class="card-body">
                     <div class="api-row">
@@ -173,13 +175,13 @@ cat > /mnt/user-data/outputs/index.html << 'HTMLEOF'
             </div>
 
             <div class="card">
-                <div class="card-header"><span class="card-num">02</span><span class="card-label">Tải ảnh lên</span></div>
+                <div class="card-header"><span class="card-num">01</span><span class="card-label">Tải ảnh lên</span></div>
                 <div class="card-body">
                     <div id="dropzone">
                         <input type="file" id="file-input" accept="image/*,.pdf" />
                         <div class="drop-icon-box">↑</div>
                         <div class="drop-title">KÉO THẢ ẢNH VÀO ĐÂY</div>
-                        <div class="drop-sub">JPG · PNG · PDF &nbsp;|&nbsp; <strong>tối đa 10MB</strong></div>
+                        <div class="drop-sub">hỗ trợ tất cả loại ảnh &nbsp;|&nbsp; <strong>tối đa 10MB</strong></div>
                     </div>
                     <div class="file-row" id="file-box">
                         <span style="font-size:1.1rem">🖼</span>
@@ -192,7 +194,7 @@ cat > /mnt/user-data/outputs/index.html << 'HTMLEOF'
 
             <div id="error-box"></div>
 
-            <button id="scan-btn" disabled onclick="runOCR()">⬡ &nbsp;QUÉT &amp; PHÂN TÍCH BILL</button>
+            <button id="scan-btn" disabled onclick="runOCR()">⬡ &nbsp;QUÉT &amp; PHÂN TÍCH</button>
 
             <div class="card" id="result">
                 <div class="result-header">
@@ -444,7 +446,7 @@ async function runOCR() {
 function setLoading(on) {
     const btn = document.getElementById("scan-btn");
     btn.disabled = on;
-    btn.textContent = on ? "⏳  ĐANG XỬ LÝ..." : "⬡  QUÉT & PHÂN TÍCH BILL";
+    btn.textContent = on ? "⏳  ĐANG XỬ LÝ..." : "⬡  QUÉT & PHÂN TÍCH";
 }
 
 function showError(msg) {
@@ -474,5 +476,4 @@ function resetAll() { removeFile(); window.scrollTo({ top: 0, behavior: "smooth"
 
 </body>
 </html>
-    
 HTMLEOF
