@@ -1,4 +1,4 @@
-from flask import Flask, cli, render_template, request
+from flask import Flask, Response, cli, render_template, request
 
 from util import create_log
 
@@ -9,11 +9,13 @@ cli.show_server_banner = lambda *args, **kwargs: None
 server = Flask(import_name=__name__)
 
 
-@server.before_request
-def bef() -> None:
+@server.after_request
+def aft(response: Response) -> Response:
     log.info(
-        f"{request.method} {request.remote_addr}: {request.path}"
+        f"{request.method} {request.remote_addr}: {request.path} {response.status_code}"
     )
+
+    return response
 
 
 @server.route("/image-to-text", methods=["POST"])
