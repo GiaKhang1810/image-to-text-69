@@ -278,6 +278,53 @@
             padding: 16px 0;
         }
 
+        /* ── Badge cho từng loại dòng (TOTAL, TAX, DISCOUNT...) ────── */
+        .badge-type {
+            font-size: .6rem;
+            font-weight: 800;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            border-radius: 4px;
+            padding: 2px 6px;
+            margin-right: 6px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .badge-type-total    { background: #fdecea; color: var(--red); }
+        .badge-type-subtotal { background: #fff4e5; color: #b26a00; }
+        .badge-type-tax      { background: #fff4e5; color: #b26a00; }
+        .badge-type-discount { background: #e8f5e9; color: var(--green); }
+        .badge-type-service  { background: #ede7f6; color: #5e35b1; }
+        .badge-type-payment  { background: #e8f0fb; color: var(--blue); }
+        .badge-type-change   { background: #e8f0fb; color: var(--blue); }
+        .badge-type-header   { background: #eceff1; color: var(--gray); }
+        .badge-type-note     { background: #eceff1; color: var(--gray); }
+
+        .badge-multi {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            line-height: 15px;
+            text-align: center;
+            font-size: .62rem;
+            font-weight: 800;
+            border-radius: 50%;
+            background: #fff4e5;
+            color: #b26a00;
+            cursor: help;
+        }
+
+        /* Nổi dòng TOTAL/SUBTOTAL lên để dễ nhìn tổng tiền cuối cùng */
+        .row-total td {
+            background: #fdecea !important;
+            font-weight: 800;
+        }
+
+        .row-subtotal td {
+            font-weight: 700;
+        }
+
         /* ── Skeleton loading ─────────────────────────────────────── */
         @keyframes shimmer {
             0% {

@@ -37,11 +37,56 @@ class Process:
         self.__auto_rotate = auto_rotate
         self.__auto_sharpen = auto_sharpen
 
+
     def readtext(self, image: Image) -> str:
         image_np = array(image)
-        content = self.__reader.readtext(image=image_np, detail=0)
+        detections = self.__reader.readtext(image=image_np, detail=1)
 
-        return " ".join(content)
+        if not detections:
+            return ""
+
+        # detections item: (bbox, text, confidence); bbox là 4 điểm góc.
+        items = []
+        for bbox, text, _confidence in detections:
+            xs = [point[0] for point in bbox]
+            ys = [point[1] for point in bbox]
+            center_y = sum(ys) / len(ys)
+            height = max(ys) - min(ys)
+            items.append(
+                {
+                    "text": text,
+                    "x": min(xs),
+                    "y": center_y,
+                    "h": max(height, 1.0),
+                }
+            )
+
+        # Sắp xếp thô theo y để việc gom dòng bên dưới diễn ra tuần tự.
+        items.sort(key=lambda item: item["y"])
+
+        lines: list[list[dict]] = []
+        for item in items:
+            placed = False
+
+            for line in lines:
+                ref = line[0]
+                # Cùng 1 dòng nếu tâm y lệch nhau không quá nửa chiều cao chữ.
+                if abs(item["y"] - ref["y"]) <= max(item["h"], ref["h"]) * 0.6:
+                    line.append(item)
+                    placed = True
+                    break
+
+            if not placed:
+                lines.append([item])
+
+        lines.sort(key=lambda line: sum(i["y"] for i in line) / len(line))
+
+        rendered_lines = []
+        for line in lines:
+            line.sort(key=lambda item: item["x"])
+            rendered_lines.append(" ".join(item["text"] for item in line))
+
+        return "\n".join(rendered_lines)
 
     # Cải thiện độ nét
     def __sharpen(self, image: Image) -> Image:

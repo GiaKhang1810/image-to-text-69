@@ -262,24 +262,175 @@
         switchTab("table");
     }
 
-    function renderParsedTable(text) {
-        if (!els.parsedContent) return;
 
-        const lines = text
+    const MONEY_RE = /(?:(?<=\$)\d{1,3}(?:,\d{3})*(?:\.\d{2})?(?!\d))|(?:(?<!\d)\d+(?:[.,]\d{3})*[.,]\d{2}(?!\s*%)(?!\d))/g;
+
+    const KEYWORD_RULES = [
+        {
+            type: "total",
+            badge: "TOTAL",
+            re: /\b(grand\s*total|total\s*due|amount\s*due|total|tong\s*cong|t[ôo]ng\s*ti[êe]n|th[àa]nh\s*ti[êe]n)\b/i,
+        },
+        {
+            type: "subtotal",
+            badge: "SUBTOTAL",
+            re: /\b(sub[\s-]?total|t[ạa]m\s*t[íi]nh)\b/i,
+        },
+        {
+            type: "tax",
+            badge: "TAX",
+            re: /\b(vat|gst|sales\s*tax|tax|thu[ếe])\b/i,
+        },
+        {
+            type: "discount",
+            badge: "DISCOUNT",
+            re: /\b(discount|coupon|promo(?:tion)?|voucher|gi[ảa]m\s*gi[áa])\b/i,
+        },
+        {
+            type: "service",
+            badge: "SERVICE",
+            re: /\b(service\s*charge|tip|gratuity|ph[íi]\s*d[ịi]ch\s*v[ụu])\b/i,
+        },
+        {
+            type: "payment",
+            badge: "PAYMENT",
+            re: /\b(cash|credit|debit|visa|mastercard|amex|american\s*express|discover|jcb|union\s*pay|card|tend|paid|payment|thanh\s*to[áa]n|ti[ềe]n\s*m[ặa]t)\b/i,
+        },
+        {
+            type: "change",
+            badge: "CHANGE",
+            re: /\b(change|balance\s*due|balance|ti[ềe]n\s*th[ốo]i|ti[ềe]n\s*th[ừu]a)\b/i,
+        },
+        {
+            type: "header",
+            badge: "HEADER",
+            re: /\b(receipt|invoice|bill|h[óo]a\s*[đd][ơo]n|order\s*#?\d*|table\s*#?\d*)\b/i,
+        },
+    ];
+
+    function classifyLabel(labelText) {
+        for (const rule of KEYWORD_RULES) {
+            if (rule.re.test(labelText)) return rule;
+        }
+        return null; // không khớp từ khóa nào -> coi là 1 dòng mặt hàng (item)
+    }
+
+   
+    function splitByMoney(segmentText, rows) {
+        const clean = segmentText.replace(/\s+/g, " ").trim();
+        const matches = [...clean.matchAll(MONEY_RE)];
+
+        if (!matches.length) {
+            if (clean) {
+                const rule = classifyLabel(clean);
+                rows.push({
+                    type: rule ? rule.type : "note",
+                    badge: rule ? rule.badge : "NOTE",
+                    text: clean,
+                    amount: "",
+                });
+            }
+            return;
+        }
+
+        let cursor = 0;
+
+        matches.forEach((m) => {
+            const start = m.index;
+            let label = clean.slice(cursor, start).trim();
+            let amount = m[0];
+            cursor = start + m[0].length;
+
+     
+            const signMatch = label.match(/([-+])\s*$/);
+            if (signMatch) {
+                label = label.slice(0, signMatch.index).trim();
+                amount = `${signMatch[1]}${amount}`;
+            }
+
+            if (!label) {
+
+                if (rows.length) {
+                    rows[rows.length - 1].amount += ` / ${amount}`;
+                    rows[rows.length - 1].multi = true;
+                }
+                return;
+            }
+
+            const rule = classifyLabel(label);
+
+            if (rule) {
+                rows.push({ type: rule.type, badge: rule.badge, text: label, amount });
+            } else {
+                rows.push({ type: "item", badge: "ITEM", text: label, amount });
+            }
+        });
+
+        const tail = clean.slice(cursor).trim();
+        if (tail) {
+
+            const isShortCode = tail.length <= 3 && !/\d/.test(tail);
+
+            if (isShortCode && rows.length) {
+                rows[rows.length - 1].text += ` (${tail})`;
+            } else {
+                const rule = classifyLabel(tail);
+                rows.push({
+                    type: rule ? rule.type : "note",
+                    badge: rule ? rule.badge : "NOTE",
+                    text: tail,
+                    amount: "",
+                });
+            }
+        }
+    }
+
+    function parseReceiptText(text) {
+        const raw = String(text || "");
+        const lines = raw
             .split(/\r?\n/)
             .map((line) => line.trim())
             .filter(Boolean);
 
-        if (!lines.length) {
+        const rows = [];
+
+        if (lines.length > 1) {
+            // Backend đã gom theo dòng thật của hóa đơn (theo tọa độ y) ->
+            // mỗi dòng OCR cho ra đúng 1 (hoặc vài) dòng bảng tương ứng.
+            lines.forEach((line) => splitByMoney(line, rows));
+        } else {
+            // Không có ranh giới dòng (ví dụ text cũ/joined) -> fallback về
+            // cách cũ: tách toàn bộ theo vị trí số tiền xuất hiện.
+            splitByMoney(raw, rows);
+        }
+
+        return rows;
+    }
+
+    function renderParsedTable(text) {
+        if (!els.parsedContent) return;
+
+        const rows = parseReceiptText(text);
+
+        if (!rows.length) {
             els.parsedContent.innerHTML = `<div class="parsed-empty">Không có nội dung.</div>`;
             return;
         }
 
-        const rows = lines.map((line, index) => {
+        const body = rows.map((row, index) => {
+            const badgeHtml = row.type === "item"
+                ? ""
+                : `<span class="badge-type badge-type-${row.type}">${row.badge}</span> `;
+
+            const amountHtml = row.amount
+                ? `<span class="badge-gia">${escapeHtml(row.amount)}</span>${row.multi ? ` <span class="badge-multi" title="OCR đọc ra nhiều số, kiểm tra lại giúp">?</span>` : ""}`
+                : "";
+
             return `
-                <tr>
+                <tr class="row-${row.type}">
                     <td><span class="badge-mon">${index + 1}</span></td>
-                    <td>${escapeHtml(line)}</td>
+                    <td>${badgeHtml}${escapeHtml(row.text)}</td>
+                    <td>${amountHtml}</td>
                 </tr>
             `;
         }).join("");
@@ -290,9 +441,10 @@
                     <tr>
                         <th>STT</th>
                         <th>Nội dung</th>
+                        <th>Số tiền</th>
                     </tr>
                 </thead>
-                <tbody>${rows}</tbody>
+                <tbody>${body}</tbody>
             </table>
         `;
     }
